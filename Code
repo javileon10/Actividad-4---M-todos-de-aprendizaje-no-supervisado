@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ======================
-# 1. Generación de Datos Sintéticos (si no tienes dataset real)
+# 1. Generación de Datos ficticios
 # ======================
 np.random.seed(42)
 num_estaciones = 100
@@ -40,7 +40,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # ======================
-# 3. Determinación del Número Óptimo de Clusters (Método del Codo)
+# 3. Determinación del Número Óptimo de Clusters
 # ======================
 inertia = []
 k_values = range(1, 10)
@@ -50,7 +50,7 @@ for k in k_values:
     kmeans.fit(X_scaled)
     inertia.append(kmeans.inertia_)
 
-# Gráfico del método del codo
+# Gráfico
 plt.figure(figsize=(10, 6))
 plt.plot(k_values, inertia, marker='o', linestyle='--')
 plt.title('Método del Codo para Determinar K Óptimo')
