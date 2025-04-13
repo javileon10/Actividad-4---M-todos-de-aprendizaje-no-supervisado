@@ -1,0 +1,122 @@
+# -*- coding: utf-8 -*-
+"""
+Análisis de Clustering para Datos de Transporte Masivo
+"""
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# ======================
+# 1. Generación de Datos Sintéticos (si no tienes dataset real)
+# ======================
+np.random.seed(42)
+num_estaciones = 100
+
+data = {
+    'estacion_id': [f"EST_{i:03d}" for i in range(1, num_estaciones+1)],
+    'pasajeros_diarios': np.random.randint(1000, 20000, size=num_estaciones),
+    'hora_pico_mañana': np.random.normal(loc=8, scale=1.5, size=num_estaciones).round(1),
+    'hora_pico_tarde': np.random.normal(loc=18, scale=1.5, size=num_estaciones).round(1),
+    'tiempo_espera_promedio': np.random.uniform(2, 15, size=num_estaciones).round(1),
+    'conexiones': np.random.randint(1, 5, size=num_estaciones)
+}
+
+df = pd.DataFrame(data)
+
+# Guardar dataset (opcional)
+df.to_csv('datos_transporte_masivo.csv', index=False)
+
+# ======================
+# 2. Preprocesamiento de Datos
+# ======================
+# Seleccionar características para clustering
+X = df[['pasajeros_diarios', 'hora_pico_mañana', 'tiempo_espera_promedio', 'conexiones']]
+
+# Estandarización de datos
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# ======================
+# 3. Determinación del Número Óptimo de Clusters (Método del Codo)
+# ======================
+inertia = []
+k_values = range(1, 10)
+
+for k in k_values:
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    kmeans.fit(X_scaled)
+    inertia.append(kmeans.inertia_)
+
+# Gráfico del método del codo
+plt.figure(figsize=(10, 6))
+plt.plot(k_values, inertia, marker='o', linestyle='--')
+plt.title('Método del Codo para Determinar K Óptimo')
+plt.xlabel('Número de Clusters (K)')
+plt.ylabel('Inercia')
+plt.xticks(k_values)
+plt.grid()
+plt.show()
+
+# ======================
+# 4. Aplicación de K-Means con K Óptimo
+# ======================
+k_optimo = 3  # Cambiar según lo observado en el método del codo
+kmeans = KMeans(n_clusters=k_optimo, random_state=42, n_init=10)
+clusters = kmeans.fit_predict(X_scaled)
+
+# Añadir clusters al dataframe original
+df['cluster'] = clusters
+
+# ======================
+# 5. Visualización de Resultados
+# ======================
+# Gráfico 1: Pasajeros vs Hora Pico
+plt.figure(figsize=(12, 7))
+sns.scatterplot(data=df, x='hora_pico_mañana', y='pasajeros_diarios', 
+                hue='cluster', palette='viridis', s=100)
+plt.title('Clustering de Estaciones por Hora Pico y Pasajeros')
+plt.xlabel('Hora Pico Mañana (hrs)')
+plt.ylabel('Pasajeros Diarios')
+plt.grid()
+plt.show()
+
+# Gráfico 2: Tiempo de Espera vs Conexiones
+plt.figure(figsize=(12, 7))
+sns.scatterplot(data=df, x='conexiones', y='tiempo_espera_promedio', 
+                hue='cluster', palette='deep', s=100)
+plt.title('Clustering por Conexiones y Tiempo de Espera')
+plt.xlabel('Número de Conexiones')
+plt.ylabel('Tiempo de Espera Promedio (min)')
+plt.grid()
+plt.show()
+
+# ======================
+# 6. Análisis de los Clusters
+# ======================
+# Estadísticas por cluster
+cluster_stats = df.groupby('cluster').agg({
+    'pasajeros_diarios': ['mean', 'std'],
+    'hora_pico_mañana': ['mean', 'std'],
+    'tiempo_espera_promedio': ['mean', 'std'],
+    'conexiones': ['mean', 'std'],
+    'estacion_id': 'count'
+}).rename(columns={'estacion_id': 'conteo'})
+
+print("\nEstadísticas por Cluster:")
+print(cluster_stats)
+
+# ======================
+# 7. Interpretación de Resultados (personalizar según tus datos)
+# ======================
+print("\nInterpretación de Clusters:")
+print("""
+Cluster 0: Estaciones con tráfico moderado en horas pico
+Cluster 1: Estaciones con alta afluencia y múltiples conexiones
+Cluster 2: Estaciones con baja demanda y menos conexiones
+""")
+
+# Guardar resultados (opcional)
+df.to_csv('resultados_clustering_transporte.csv', index=False)
